@@ -71,19 +71,50 @@
 
   <div class="toast" id="toast"></div>
 
-  <!-- qrcode.js CDN + fallback -->
+  <!-- 内联定义关键函数，确保全局可用 -->
   <script>
-    let qrLoaded = false;
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
-    s.onload = () => { qrLoaded = true; };
-    s.onerror = () => {
-      const s2 = document.createElement('script');
-      s2.src = 'https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-      s2.onload = () => { qrLoaded = true; };
-      document.head.appendChild(s2);
-    };
-    document.head.appendChild(s);
+    // 全局函数：generateQR - 由外部 JS 覆盖完整实现
+    function generateQR() {
+      // 如果外部 JS 已加载，调用它的实现
+      if (typeof window._generateQR === 'function') {
+        window._generateQR();
+        return;
+      }
+      showToast('二维码生成模块加载中，请稍后再试', 'info');
+    }
+    // 全局函数：downloadQR - 由外部 JS 覆盖完整实现
+    function downloadQR() {
+      if (typeof window._downloadQR === 'function') {
+        window._downloadQR();
+        return;
+      }
+      showToast('二维码生成模块加载中，请稍后再试', 'info');
+    }
+  </script>
+
+  <!-- 加载二维码库（使用正确的包名 qrcode） -->
+  <script>
+    (function() {
+      var loaded = false;
+      function tryLoad(url) {
+        var s = document.createElement('script');
+        s.src = url;
+        s.onload = function() { loaded = true; };
+        s.onerror = function() {
+          // 所有 CDN 都失败时，记录错误
+          console.warn('QR library failed to load from:', url);
+        };
+        document.head.appendChild(s);
+        return s;
+      }
+      // 主 CDN
+      tryLoad('https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js').onerror = function() {
+        // 备用 CDN
+        tryLoad('https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js').onerror = function() {
+          console.warn('All QR library CDNs failed');
+        };
+      };
+    })();
   </script>
   <script src="../js/utils.js"></script>
   <script src="../js/tools/qr-generator.js"></script>

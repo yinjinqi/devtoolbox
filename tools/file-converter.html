@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文件格式转换 - DevToolbox</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand" style="text-decoration:none;">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="8" fill="#0071e3"/>
+        <path d="M8 16L14 22L24 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>DevToolbox</span>
+    </a>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="切换主题"></button>
+  </nav>
+
+  <div class="tool-page">
+    <div class="tool-header fade-in">
+      <div style="font-size:48px;margin-bottom:16px;">📄</div>
+      <h1>文件格式转换</h1>
+      <p>在 Excel、CSV、JSON、PDF、Word 等格式之间互相转换，纯前端处理，文件不上传服务器。</p>
+    </div>
+
+    <div class="tool-content">
+
+      <!-- 选择转换类型 -->
+      <div class="io-card fade-in">
+        <div class="io-card-header">
+          <h4>选择转换类型</h4>
+        </div>
+        <select id="convType" class="search-box" style="width:100%;" onchange="onConvTypeChange()">
+          <option value="xlsx2csv">Excel → CSV</option>
+          <option value="csv2xlsx">CSV → Excel</option>
+          <option value="xlsx2json">Excel → JSON</option>
+          <option value="json2xlsx">JSON → Excel</option>
+          <option value="xlsx2txt">Excel → 文本</option>
+          <option value="pdf2txt">PDF → 文本</option>
+          <option value="txt2pdf">文本 → PDF</option>
+          <option value="word2txt">Word → 文本</option>
+          <option value="docx2pdf">Word → PDF</option>
+          <option value="pdf2docx">PDF → Word</option>
+          <option value="html2pdf">HTML → PDF</option>
+        </select>
+        <p id="convDesc" style="font-size:13px;color:var(--color-text-tertiary);margin-top:8px;">将 Excel (.xlsx/.xls) 转换为 CSV 格式。</p>
+      </div>
+
+      <!-- 文件上传/输入区 -->
+      <div class="io-card fade-in">
+        <div class="io-card-header">
+          <h4 id="inputLabel">上传文件</h4>
+          <button class="btn btn-ghost" id="clearBtn" onclick="clearAll()">清空</button>
+        </div>
+
+        <!-- 文件上传区域 -->
+        <div id="fileUploadArea" class="upload-area" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" onclick="document.getElementById('fileInput').click()">
+          <div style="font-size:32px;margin-bottom:8px;">📁</div>
+          <p style="font-size:14px;color:var(--color-text-secondary);">拖拽文件到此处，或点击选择文件</p>
+          <p id="fileHint" style="font-size:12px;color:var(--color-text-tertiary);margin-top:4px;">支持 .xlsx, .xls 格式</p>
+          <input type="file" id="fileInput" style="display:none;" onchange="handleFileSelect(event)" accept="">
+        </div>
+        <div id="fileInfo" style="display:none;padding:12px;background:var(--color-bg-tertiary);border-radius:8px;margin-top:8px;font-size:14px;color:var(--color-text-secondary);"></div>
+
+        <!-- 文本输入区域（用于文本→PDF、HTML→PDF、JSON→Excel） -->
+        <div id="textInputArea" style="display:none;">
+          <textarea id="textInput" class="io-textarea" style="min-height:150px;font-family:monospace;" placeholder="在此输入内容…"></textarea>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="io-card fade-in">
+        <button class="btn btn-primary" id="convertBtn" onclick="startConvert()" style="width:100%;">
+          <span id="convertBtnText">转换</span>
+          <span id="convertSpinner" style="display:none;margin-left:8px;" class="spinner"></span>
+        </button>
+      </div>
+
+      <!-- 结果预览 -->
+      <div class="io-card fade-in">
+        <div class="io-card-header">
+          <h4>转换结果</h4>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost" id="downloadBtn" onclick="downloadResult()" style="display:none;font-size:13px;">下载文件</button>
+            <button class="btn btn-ghost" id="copyResultBtn" onclick="copyResult()" style="display:none;font-size:13px;">复制结果</button>
+          </div>
+        </div>
+        <div id="convOutput" class="io-result" style="min-height:150px;overflow:auto;">
+          选择转换类型并上传文件后，点击"转换"按钮。
+        </div>
+        <div id="previewArea" style="display:none;margin-top:12px;max-height:400px;overflow:auto;border-radius:8px;border:1px solid var(--color-border);"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- 内联所有逻辑 -->
+  <script>
+    // ===== 全局状态 =====
+    var currentFile = null;
+    var currentResult = null;
+    var currentResultBlob = null;
+    var currentResultFilename = '';
+    var currentResultType = '';
+
+    // ===== 转换类型配置 =====
+    var convConfigs = {
+      'xlsx2csv': {
+        label: 'Excel → CSV',
+        desc: '将 Excel (.xlsx/.xls) 转换为 CSV 格式。',
+        accept: '.xlsx,.xls',
+        fileHint: '支持 .xlsx, .xls 格式',
+        inputMode: 'file',
+        outputType: 'csv',
+        filename: 'converted.csv',
+        mime: 'text/csv'
+      },
+      'csv2xlsx': {
+        label: 'CSV → Excel',
+        desc: '将 CSV 文件转换为 Excel (.xlsx) 格式。',
+        accept: '.csv',
+        fileHint: '支持 .csv 格式',
+        inputMode: 'file',
+        outputType: 'xlsx',
+        filename: 'converted.xlsx',
+        mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      },
+      'xlsx2json': {
+        label: 'Excel → JSON',
+        desc: '将 Excel 文件转换为 JSON 格式。',
+        accept: '.xlsx,.xls',
+        fileHint: '支持 .xlsx, .xls 格式',
+        inputMode: 'file',
+        outputType: 'json',
+        filename: 'converted.json',
+        mime: 'application/json'
+      },
+      'json2xlsx': {
+        label: 'JSON → Excel',
+        desc: '将 JSON 数据转换为 Excel (.xlsx) 格式。支持输入 JSON 数组或上传 .json 文件。',
+        accept: '.json',
+        fileHint: '支持 .json 文件，或直接在下方输入',
+        inputMode: 'both',
+        outputType: 'xlsx',
+        filename: 'converted.xlsx',
+        mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      },
+      'xlsx2txt': {
+        label: 'Excel → 文本',
+        desc: '将 Excel 文件内容提取为纯文本格式。',
+        accept: '.xlsx,.xls',
+        fileHint: '支持 .xlsx, .xls 格式',
+        inputMode: 'file',
+        outputType: 'txt',
+        filename: 'extracted.txt',
+        mime: 'text/plain'
+      },
+      'pdf2txt': {
+        label: 'PDF → 文本',
+        desc: '从 PDF 文件中提取文本内容。',
+        accept: '.pdf',
+        fileHint: '支持 .pdf 格式',
+        inputMode: 'file',
+        outputType: 'txt',
+        filename: 'extracted.txt',
+        mime: 'text/plain'
+      },
+      'txt2pdf': {
+        label: '文本 → PDF',
+        desc: '将文本内容转换为 PDF 文件。',
+        accept: '.txt',
+        fileHint: '支持 .txt 文件，或直接在下方输入文本',
+        inputMode: 'both',
+        outputType: 'pdf',
+        filename: 'converted.pdf',
+        mime: 'application/pdf'
+      },
+      'word2txt': {
+        label: 'Word → 文本',
+        desc: '从 Word (.docx) 文件中提取文本内容。',
+        accept: '.docx',
+        fileHint: '支持 .docx 格式',
+        inputMode: 'file',
+        outputType: 'txt',
+        filename: 'extracted.txt',
+        mime: 'text/plain'
+      },
+      'docx2pdf': {
+        label: 'Word → PDF',
+        desc: '将 Word (.docx) 文件转换为 PDF 文档。',
+        accept: '.docx',
+        fileHint: '支持 .docx 格式',
+        inputMode: 'file',
+        outputType: 'pdf',
+        filename: 'converted.pdf',
+        mime: 'application/pdf'
+      },
+      'pdf2docx': {
+        label: 'PDF → Word',
+        desc: '从 PDF 文件中提取文本并生成 Word (.docx) 文档。',
+        accept: '.pdf',
+        fileHint: '支持 .pdf 格式',
+        inputMode: 'file',
+        outputType: 'docx',
+        filename: 'converted.docx',
+        mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      },
+      'html2pdf': {
+        label: 'HTML → PDF',
+        desc: '将 HTML 内容转换为 PDF 文件。',
+        accept: '.html,.htm',
+        fileHint: '支持 .html 文件，或直接在下方输入 HTML',
+        inputMode: 'both',
+        outputType: 'pdf',
+        filename: 'converted.pdf',
+        mime: 'application/pdf'
+      }
+    };
+
+    // ===== 切换转换类型 =====
+    function onConvTypeChange() {
+      var type = document.getElementById('convType').value;
+      var cfg = convConfigs[type];
+      if (!cfg) return;
+
+      document.getElementById('convDesc').textContent = cfg.desc;
+      document.getElementById('fileHint').textContent = cfg.fileHint;
+      document.getElementById('fileInput').accept = cfg.accept;
+
+      var fileUploadArea = document.getElementById('fileUploadArea');
+      var textInputArea = document.getElementById('textInputArea');
+      var fileInfo = document.getElementById('fileInfo');
+
+      fileUploadArea.style.display = 'block';
+      textInputArea.style.display = 'none';
+
+      if (cfg.inputMode === 'both') {
+        textInputArea.style.display = 'block';
+      }
+
+      // 根据类型设置 textarea 提示
+      var textInput = document.getElementById('textInput');
+      if (type === 'json2xlsx') {
+        textInput.placeholder = '[{"name":"张三","age":30},{"name":"李四","age":25}]';
+      } else if (type === 'txt2pdf') {
+        textInput.placeholder = '在此输入文本内容…';
+      } else if (type === 'html2pdf') {
+        textInput.placeholder = '输入 HTML 代码，如：<h1>标题</h1><p>段落内容</p>';
+      }
+
+      clearAll();
+    }
+
+    // ===== 文件处理 =====
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.currentTarget.style.borderColor = 'var(--color-accent)';
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      e.currentTarget.style.borderColor = '';
+      var file = e.dataTransfer.files[0];
+      if (file) setFile(file);
+    }
+
+    function handleFileSelect(e) {
+      var file = e.target.files[0];
+      if (file) setFile(file);
+    }
+
+    function setFile(file) {
+      currentFile = file;
+      var fi = document.getElementById('fileInfo');
+      fi.style.display = 'block';
+      var size = (file.size / 1024).toFixed(1);
+      fi.innerHTML = '已选择：<strong>' + file.name + '</strong> (' + size + ' KB)';
+      showToast('已选择文件：' + file.name, 'success');
+    }
+
+    // ===== 清空 =====
+    function clearAll() {
+      currentFile = null;
+      currentResult = null;
+      currentResultBlob = null;
+      document.getElementById('fileInput').value = '';
+      document.getElementById('fileInfo').style.display = 'none';
+      document.getElementById('textInput').value = '';
+      document.getElementById('convOutput').textContent = '选择转换类型并上传文件后，点击"转换"按钮。';
+      document.getElementById('downloadBtn').style.display = 'none';
+      document.getElementById('copyResultBtn').style.display = 'none';
+      document.getElementById('previewArea').style.display = 'none';
+      document.getElementById('previewArea').innerHTML = '';
+    }
+
+    // ===== 加载外部库 =====
+    var libsLoaded = {};
+
+    function loadLib(name, url) {
+      return new Promise(function(resolve, reject) {
+        if (libsLoaded[name]) { resolve(); return; }
+        var s = document.createElement('script');
+        s.src = url;
+        s.onload = function() { libsLoaded[name] = true; resolve(); };
+        s.onerror = function() { reject(new Error('加载 ' + name + ' 失败')); };
+        document.head.appendChild(s);
+      });
+    }
+
+    // ===== 转换核心 =====
+    function startConvert() {
+      var type = document.getElementById('convType').value;
+      var outputEl = document.getElementById('convOutput');
+      var btn = document.getElementById('convertBtn');
+      var spinner = document.getElementById('convertSpinner');
+      var btnText = document.getElementById('convertBtnText');
+
+      // UI 状态
+      outputEl.textContent = '正在转换，请稍候…';
+      btn.disabled = true;
+      spinner.style.display = 'inline-block';
+      btnText.textContent = '转换中…';
+
+      var promise;
+      switch (type) {
+        case 'xlsx2csv': promise = convertXlsx2Csv(); break;
+        case 'csv2xlsx': promise = convertCsv2Xlsx(); break;
+        case 'xlsx2json': promise = convertXlsx2Json(); break;
+        case 'json2xlsx': promise = convertJson2Xlsx(); break;
+        case 'xlsx2txt': promise = convertXlsx2Txt(); break;
+        case 'pdf2txt': promise = convertPdf2Txt(); break;
+        case 'txt2pdf': promise = convertTxt2Pdf(); break;
+        case 'word2txt': promise = convertWord2Txt(); break;
+        case 'docx2pdf': promise = convertDocx2Pdf(); break;
+        case 'pdf2docx': promise = convertPdf2Docx(); break;
+        case 'html2pdf': promise = convertHtml2Pdf(); break;
+        default: promise = Promise.reject('未知转换类型');
+      }
+
+      promise.then(function(result) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        btnText.textContent = '转换';
+      }).catch(function(err) {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        btnText.textContent = '转换';
+        outputEl.textContent = '❌ ' + (err.message || err);
+        if (typeof showToast === 'function') showToast('转换失败', 'error');
+      });
+    }
+
+    // ===== Excel → CSV =====
+    function convertXlsx2Csv() {
+      return loadLib('xlsx', 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js').then(function() {
+        return readFileAsArrayBuffer(currentFile);
+      }).then(function(buf) {
+        var wb = XLSX.read(buf, {type:'array'});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var csv = XLSX.utils.sheet_to_csv(ws);
+        showResult(csv, 'csv', convConfigs['xlsx2csv']);
+        return csv;
+      });
+    }
+
+    // ===== CSV → Excel =====
+    function convertCsv2Xlsx() {
+      return loadLib('xlsx', 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js').then(function() {
+        return readFileAsText(currentFile);
+      }).then(function(csvText) {
+        var wb = XLSX.utils.book_new();
+        var ws = XLSX.utils.aoa_to_sheet(csvToArray(csvText));
+        XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+        var wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+        var blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+        showBlobResult(blob, convConfigs['csv2xlsx']);
+      });
+    }
+
+    function csvToArray(text) {
+      var rows = text.split('\n');
+      return rows.map(function(row) { return row.split(','); });
+    }
+
+    // ===== Excel → JSON =====
+    function convertXlsx2Json() {
+      return loadLib('xlsx', 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js').then(function() {
+        return readFileAsArrayBuffer(currentFile);
+      }).then(function(buf) {
+        var wb = XLSX.read(buf, {type:'array'});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var json = XLSX.utils.sheet_to_json(ws);
+        var text = JSON.stringify(json, null, 2);
+        showResult(text, 'json', convConfigs['xlsx2json']);
+        return text;
+      });
+    }
+
+    // ===== JSON → Excel =====
+    function convertJson2Xlsx() {
+      return loadLib('xlsx', 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js').then(function() {
+        var text = getInputText();
+        if (!text) throw new Error('请输入或上传 JSON 数据');
+        var data = JSON.parse(text);
+        if (!Array.isArray(data)) throw new Error('JSON 数据必须是数组格式，如 [{"col1":"val1"}]');
+        var wb = XLSX.utils.book_new();
+        var ws = XLSX.utils.json_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+        var wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+        var blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+        showBlobResult(blob, convConfigs['json2xlsx']);
+      });
+    }
+
+    // ===== Excel → 文本 =====
+    function convertXlsx2Txt() {
+      return loadLib('xlsx', 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js').then(function() {
+        return readFileAsArrayBuffer(currentFile);
+      }).then(function(buf) {
+        var wb = XLSX.read(buf, {type:'array'});
+        var lines = [];
+        for (var i = 0; i < wb.SheetNames.length; i++) {
+          var name = wb.SheetNames[i];
+          var ws = wb.Sheets[name];
+          var csv = XLSX.utils.sheet_to_csv(ws);
+          lines.push('===== 工作表：' + name + ' =====');
+          lines.push(csv);
+          lines.push('');
+        }
+        var text = lines.join('\n');
+        showResult(text, 'txt', convConfigs['xlsx2txt']);
+        return text;
+      });
+    }
+
+    // ===== PDF → 文本 =====
+    function convertPdf2Txt() {
+      return loadLib('pdfjs', 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js').then(function() {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        return readFileAsArrayBuffer(currentFile);
+      }).then(function(buf) {
+        return pdfjsLib.getDocument({data: buf.slice(0)}).promise;
+      }).then(function(pdf) {
+        var total = pdf.numPages;
+        var texts = [];
+        var promises = [];
+        for (var i = 1; i <= total; i++) {
+          promises.push(pdf.getPage(i).then(function(page) {
+            return page.getTextContent();
+          }).then(function(content) {
+            var pageText = content.items.map(function(item) { return item.str; }).join(' ');
+            texts.push(pageText);
+          }));
+        }
+        return Promise.all(promises).then(function() {
+          var fullText = texts.join('\n\n--- 第 X 页 ---\n\n');
+          showResult(fullText, 'txt', convConfigs['pdf2txt']);
+          return fullText;
+        });
+      });
+    }
+
+    // ===== 文本 → PDF =====
+    function convertTxt2Pdf() {
+      return loadLib('jspdf', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js').then(function() {
+        var text = getInputText();
+        if (!text) throw new Error('请输入文本内容');
+        var doc = new jspdf.jsPDF();
+        var lines = doc.splitTextToSize(text, 180);
+        var pageHeight = doc.internal.pageSize.height;
+        var y = 20;
+        for (var i = 0; i < lines.length; i++) {
+          if (y > pageHeight - 20) {
+            doc.addPage();
+            y = 20;
+          }
+          doc.text(lines[i], 15, y);
+          y += 7;
+        }
+        var blob = doc.output('blob');
+        showBlobResult(blob, convConfigs['txt2pdf']);
+      });
+    }
+
+    // ===== Word → 文本 =====
+    function convertWord2Txt() {
+      return loadLib('mammoth', 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js').then(function() {
+        return readFileAsArrayBuffer(currentFile);
+      }).then(function(buf) {
+        return mammoth.extractRawText({arrayBuffer: buf});
+      }).then(function(result) {
+        var text = result.value;
+        if (!text.trim()) text = '（文档内容为空，或无法提取文本）';
+        showResult(text, 'txt', convConfigs['word2txt']);
+        return text;
+      });
+    }
+
+    // ===== HTML → PDF =====
+    function convertHtml2Pdf() {
+      return loadLib('jspdf', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js').then(function() {
+        var html = getInputText();
+        if (!html) throw new Error('请输入 HTML 内容');
+        var doc = new jspdf.jsPDF();
+        // 简单 HTML 解析：去掉标签，将文本分行
+        var text = html.replace(/<[^>]*>/g, '').trim();
+        if (!text) text = '(HTML 内容为空)';
+        var lines = doc.splitTextToSize(text, 180);
+        var pageHeight = doc.internal.pageSize.height;
+        var y = 20;
+        for (var i = 0; i < lines.length; i++) {
+          if (y > pageHeight - 20) {
+            doc.addPage();
+            y = 20;
+          }
+          doc.text(lines[i], 15, y);
+          y += 7;
+        }
+        var blob = doc.output('blob');
+        showBlobResult(blob, convConfigs['html2pdf']);
+      });
+    }
+
+    // ===== Word → PDF（修复中文乱码：mammoth→HTML→html2canvas→jsPDF） =====
+    function convertDocx2Pdf() {
+      return loadLib('mammoth', 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js').then(function() {
+        return readFileAsArrayBuffer(currentFile);
+      }).then(function(buf) {
+        return mammoth.convertToHtml({arrayBuffer: buf});
+      }).then(function(result) {
+        var html = result.value;
+        // 加载 html2canvas + jsPDF
+        return loadLib('html2canvas', 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js').then(function() {
+          return loadLib('jspdf', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js').then(function() {
+            // 创建临时容器渲染 HTML
+            var container = document.createElement('div');
+            container.innerHTML = '<div style="font-family: -apple-system, PingFang SC, Helvetica Neue, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #1d1d1f; line-height: 1.8; font-size: 16px;">' + html + '</div>';
+            container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#fff;z-index:-1;';
+            document.body.appendChild(container);
+
+            // 等待渲染完成
+            return new Promise(function(resolve) {
+              setTimeout(function() {
+                html2canvas(container, {
+                  scale: 2,
+                  useCORS: true,
+                  backgroundColor: '#ffffff',
+                  logging: false
+                }).then(function(canvas) {
+                  var imgData = canvas.toDataURL('image/jpeg', 0.95);
+                  var pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+                  var pdfW = pdf.internal.pageSize.getWidth();
+                  var pdfH = pdf.internal.pageSize.getHeight();
+                  var imgW = canvas.width;
+                  var imgH = canvas.height;
+                  var ratio = Math.min(pdfW / imgW, pdfH / imgH);
+                  var renderW = imgW * ratio;
+                  var renderH = imgH * ratio;
+
+                  if (renderH <= pdfH) {
+                    pdf.addImage(imgData, 'JPEG', 0, 0, renderW, renderH);
+                  } else {
+                    // 多页 PDF
+                    var remaining = renderH;
+                    var offset = 0;
+                    while (remaining > 0) {
+                      var pageCanvas = document.createElement('canvas');
+                      pageCanvas.width = canvas.width;
+                      pageCanvas.height = Math.min(canvas.height * (pdfH / renderH), canvas.height - offset * canvas.height / renderH);
+                      var pageCtx = pageCanvas.getContext('2d');
+                      pageCtx.drawImage(canvas, 0, offset, canvas.width, pageCanvas.height, 0, 0, pageCanvas.width, pageCanvas.height);
+                      var pageImgData = pageCanvas.toDataURL('image/jpeg', 0.9);
+                      if (offset > 0) pdf.addPage();
+                      pdf.addImage(pageImgData, 'JPEG', 0, 0, pdfW, pdfH * (pageCanvas.height / canvas.height));
+                      offset += pageCanvas.height;
+                      remaining -= pageCanvas.height;
+                    }
+                  }
+
+                  document.body.removeChild(container);
+                  var blob = pdf.output('blob');
+                  showBlobResult(blob, convConfigs['docx2pdf']);
+                  resolve();
+                });
+              }, 500);
+            });
+          });
+        });
+      });
+    }
+
+    // ===== PDF → Word（修复：用 jszip 手动构建 .docx，不再依赖 docx 库） =====
+    function convertPdf2Docx() {
+      return loadLib('pdfjs', 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js').then(function() {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        return readFileAsArrayBuffer(currentFile);
+      }).then(function(buf) {
+        return pdfjsLib.getDocument({data: buf.slice(0)}).promise;
+      }).then(function(pdf) {
+        var texts = [];
+        var promises = [];
+        for (var i = 1; i <= pdf.numPages; i++) {
+          (function(pageNum) {
+            promises.push(pdf.getPage(pageNum).then(function(page) {
+              return page.getTextContent();
+            }).then(function(content) {
+              var pageText = content.items.map(function(item) { return item.str; }).join(' ');
+              texts.push('第 ' + pageNum + ' 页：\n' + pageText);
+            }));
+          })(i);
+        }
+        return Promise.all(promises).then(function() {
+          var fullText = texts.join('\n\n');
+          return loadLib('jszip', 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js').then(function() {
+            // 手动构建 .docx 文件（ZIP 包内包含 XML）
+            var zip = new JSZip();
+
+            // [Content_Types].xml
+            zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+              '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+              '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+              '<Default Extension="xml" ContentType="application/xml"/>' +
+              '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+              '</Types>');
+
+            // _rels/.rels
+            zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+              '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+              '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+              '</Relationships>');
+
+            // word/_rels/document.xml.rels
+            zip.file('word/_rels/document.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+              '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+              '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+              '</Relationships>');
+
+            // word/styles.xml
+            zip.file('word/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+              '<w:styles xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" ' +
+              'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" ' +
+              'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+              'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+              '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="PingFang SC" w:eastAsia="PingFang SC" w:hAnsi="PingFang SC"/><w:sz w:val="22"/></w:rPr></w:rPrDefault></w:docDefaults>' +
+              '</w:styles>');
+
+            // 构建 word/document.xml
+            var paraXml = fullText.split('\n').filter(function(l) { return l.trim(); }).map(function(line) {
+              // 转义 XML 特殊字符
+              var safeText = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+              return '<w:p><w:r><w:rPr><w:rFonts w:ascii="PingFang SC" w:eastAsia="PingFang SC" w:hAnsi="PingFang SC"/><w:sz w:val="22"/></w:rPr><w:t>' + safeText + '</w:t></w:r></w:p>';
+            }).join('');
+
+            var docXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+              '<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" ' +
+              'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" ' +
+              'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
+              'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+              '<w:body>' + paraXml + '</w:body></w:document>';
+
+            zip.file('word/document.xml', docXml);
+
+            return zip.generateAsync({type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}).then(function(blob) {
+              showBlobResult(blob, convConfigs['pdf2docx']);
+            });
+          });
+        });
+      });
+    }
+
+    // ===== 工具函数 =====
+    function readFileAsArrayBuffer(file) {
+      return new Promise(function(resolve, reject) {
+        if (!file) { reject(new Error('请先选择文件')); return; }
+        var reader = new FileReader();
+        reader.onload = function(e) { resolve(e.target.result); };
+        reader.onerror = function() { reject(new Error('文件读取失败')); };
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    function readFileAsText(file) {
+      return new Promise(function(resolve, reject) {
+        if (!file) { reject(new Error('请先选择文件')); return; }
+        var reader = new FileReader();
+        reader.onload = function(e) { resolve(e.target.result); };
+        reader.onerror = function() { reject(new Error('文件读取失败')); };
+        reader.readAsText(file);
+      });
+    }
+
+    function getInputText() {
+      // 优先使用文件内容，其次使用 textarea
+      var textarea = document.getElementById('textInput');
+      if (textarea.value.trim()) return textarea.value.trim();
+      return '';
+    }
+
+    function showResult(text, type, cfg) {
+      currentResult = text;
+      currentResultType = type;
+      currentResultFilename = cfg.filename;
+      var output = document.getElementById('convOutput');
+      var preview = document.getElementById('previewArea');
+
+      output.textContent = '✅ 转换成功！\n\n';
+      if (text.length > 5000) {
+        output.textContent += text.substring(0, 5000) + '\n\n...（内容过长，已截断前 5000 字符，请下载完整文件）';
+      } else {
+        output.textContent += text;
+      }
+
+      // 创建 Blob
+      var mime = cfg.mime;
+      currentResultBlob = new Blob([text], {type: mime});
+
+      document.getElementById('downloadBtn').style.display = 'inline-flex';
+      if (type === 'json') {
+        document.getElementById('copyResultBtn').style.display = 'inline-flex';
+      }
+      document.getElementById('previewArea').style.display = 'none';
+
+      if (typeof showToast === 'function') showToast('转换成功', 'success');
+    }
+
+    function showBlobResult(blob, cfg) {
+      currentResultBlob = blob;
+      currentResultFilename = cfg.filename;
+      currentResult = null;
+
+      var output = document.getElementById('convOutput');
+      output.textContent = '✅ 转换成功！\n\n文件已生成，请点击下方的"下载文件"按钮下载。';
+
+      document.getElementById('downloadBtn').style.display = 'inline-flex';
+      document.getElementById('copyResultBtn').style.display = 'none';
+      document.getElementById('previewArea').style.display = 'none';
+
+      if (typeof showToast === 'function') showToast('转换成功', 'success');
+    }
+
+    // ===== 下载 =====
+    function downloadResult() {
+      if (!currentResultBlob) {
+        // 如果是文本结果但 blob 未创建
+        if (currentResult) {
+          var type = document.getElementById('convType').value;
+          var cfg = convConfigs[type];
+          currentResultBlob = new Blob([currentResult], {type: cfg.mime});
+        } else {
+          showToast('没有可下载的内容', 'error');
+          return;
+        }
+      }
+      var url = URL.createObjectURL(currentResultBlob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = currentResultFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (typeof showToast === 'function') showToast('下载完成', 'success');
+    }
+
+    // ===== 复制 =====
+    function copyResult() {
+      if (!currentResult) { showToast('没有可复制的内容', 'error'); return; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(currentResult).then(function() {
+          showToast('已复制到剪贴板', 'success');
+        }).catch(function() {
+          fallbackCopy(currentResult);
+        });
+      } else {
+        fallbackCopy(currentResult);
+      }
+    }
+
+    function fallbackCopy(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('已复制到剪贴板', 'success');
+    }
+
+    // ===== 初始化 =====
+    document.addEventListener('DOMContentLoaded', function() {
+      onConvTypeChange();
+    });
+  </script>
+
+  <script src="../js/utils.js"></script>
+  <script src="../js/app.js"></script>
+</body>
+</html>
