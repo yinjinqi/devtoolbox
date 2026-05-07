@@ -109,3 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// 显式挂载到 window 对象，确保内联函数可以调用
+window._generateQR = generateQR;
+window._downloadQR = downloadQR;
