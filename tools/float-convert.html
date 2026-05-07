@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>浮点数转换 - DevToolbox</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand" style="text-decoration:none;">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="8" fill="#0071e3"/>
+        <path d="M8 16L14 22L24 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>DevToolbox</span>
+    </a>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="切换主题"></button>
+  </nav>
+
+  <div class="tool-page">
+    <div class="tool-header fade-in">
+      <div style="font-size:48px;margin-bottom:16px;">🔬</div>
+      <h1>浮点数转换</h1>
+      <p>查看单精度/双精度浮点数的二进制表示，深入理解 IEEE 754。</p>
+    </div>
+
+    <div class="tool-content">
+
+      <div class="io-card fade-in">
+        <div class="io-card-header">
+          <h4>输入数值</h4>
+          <button class="btn btn-ghost" data-action="clear" data-input="floatInput" data-output="floatOutput">清空</button>
+        </div>
+        <input type="text" id="floatInput" class="search-box" style="width:100%;margin-bottom:16px;"
+          placeholder="输入数字，例如：3.14 或 -0.001" autocomplete="off">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button class="btn btn-primary" data-action="execute" onclick="convertFloat()">转换</button>
+          <button class="btn btn-secondary" onclick="loadFloatSample()">示例</button>
+        </div>
+      </div>
+
+      <div class="io-card fade-in">
+        <div class="io-card-header">
+          <h4>转换结果</h4>
+          <button class="btn btn-ghost" data-action="copy-result" data-target="floatOutput">复制结果</button>
+        </div>
+        <div id="floatOutput" class="io-result" style="min-height:140px;">转换结果将显示在此处…</div>
+      </div>
+
+      <!-- 说明 -->
+      <div class="io-card fade-in">
+        <div class="io-card-header"><h4>IEEE 754 格式说明</h4></div>
+        <pre style="font-size:13px;line-height:1.8;color:var(--color-text-secondary);white-space:pre-wrap;">
+单精度（32位）：1 位符号 + 8 位指数 + 23 位尾数
+双精度（64位）：1 位符号 + 11 位指数 + 52 位尾数
+
+特殊值：
+  0x7f800000 = +∞
+  0xff800000 = -∞
+  0x7fc00000 = NaN</pre>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="../js/utils.js"></script>
+  <script src="../js/tools/float-convert.js"></script>
+  <script src="../js/app.js"></script>
+</body>
+</html>

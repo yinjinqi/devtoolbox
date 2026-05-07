@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON 格式化 - DevToolbox</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand" style="text-decoration:none;">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="8" fill="#0071e3"/>
+        <path d="M8 16L14 22L24 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>DevToolbox</span>
+    </a>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="切换主题"></button>
+  </nav>
+
+  <div class="tool-page">
+    <div class="tool-header fade-in">
+      <div style="font-size:48px;margin-bottom:16px;">{ }</div>
+      <h1>JSON 格式化</h1>
+      <p>格式化、压缩、验证 JSON 数据，支持大文件和循环引用检测。</p>
+    </div>
+
+    <div class="tool-content">
+
+      <!-- 输入区 -->
+      <div class="io-card fade-in">
+        <div class="io-card-header">
+          <h4>输入 JSON</h4>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost" onclick="loadSampleJSON()">加载示例</button>
+            <button class="btn btn-ghost" data-action="clear" data-input="jsonInput" data-output="jsonOutput">清空</button>
+          </div>
+        </div>
+        <textarea id="jsonInput" class="io-textarea" style="min-height:200px;" placeholder='在此粘贴 JSON 数据，例如：{"name":"DevToolbox","version":1}'></textarea>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
+          <button class="btn btn-primary" data-action="execute" onclick="formatJSON()">格式化</button>
+          <button class="btn btn-secondary" onclick="minifyJSON()">压缩</button>
+          <button class="btn btn-secondary" onclick="validateJSON()">验证</button>
+        </div>
+      </div>
+
+      <!-- 输出区 -->
+      <div class="io-card fade-in">
+        <div class="io-card-header">
+          <h4>输出结果</h4>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost" data-action="copy-result" data-target="jsonOutput">复制</button>
+          </div>
+        </div>
+        <pre id="jsonOutput" class="io-result" style="min-height:120px;">结果将显示在此处…</pre>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="../js/utils.js"></script>
+  <script src="../js/tools/json-formatter.js"></script>
+  <script src="../js/app.js"></script>
+</body>
+</html>

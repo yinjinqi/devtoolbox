@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>进制转换 - DevToolbox</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- 顶部导航 -->
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand" style="text-decoration:none;">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="8" fill="#0071e3"/>
+        <path d="M8 16L14 22L24 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>DevToolbox</span>
+    </a>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
+      <!-- JS 动态填充 -->
+    </button>
+  </nav>
+
+  <!-- 工具头部 -->
+  <div class="tool-page">
+    <div class="tool-header fade-in">
+      <div style="font-size:48px;margin-bottom:16px;">🔢</div>
+      <h1>进制转换</h1>
+      <p>在 2/8/10/16/32/64 进制之间自由转换，支持大整数（BigInt）。</p>
+    </div>
+
+    <div class="tool-content">
+
+      <!-- 输入区 -->
+      <div class="io-card fade-in">
+        <div class="io-card-header">
+          <h4>输入</h4>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost" data-action="clear" data-input="inputValue" data-output="outputValue">清空</button>
+          </div>
+        </div>
+        <input
+          type="text"
+          id="inputValue"
+          class="search-box"
+          style="width:100%;margin-bottom:16px;"
+          placeholder="输入要转换的数值，例如：255"
+          autocomplete="off"
+        >
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+          <label style="font-size:14px;color:var(--color-text-secondary);">输入进制：</label>
+          <select id="inputBase" style="padding:8px 12px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-bg-tertiary);color:var(--color-text-primary);font-size:14px;">
+            <option value="2">2 进制（二进制）</option>
+            <option value="8">8 进制（八进制）</option>
+            <option value="10" selected>10 进制（十进制）</option>
+            <option value="16">16 进制（十六进制）</option>
+            <option value="32">32 进制</option>
+            <option value="64">64 进制</option>
+          </select>
+          <button class="btn btn-primary" data-action="execute" onclick="doConvert()">转换</button>
+        </div>
+      </div>
+
+      <!-- 输出区 -->
+      <div class="io-card fade-in">
+        <div class="io-card-header">
+          <h4>转换结果</h4>
+          <button class="btn btn-ghost" data-action="copy-result" data-target="outputValue">复制结果</button>
+        </div>
+        <div id="outputValue" class="io-result">
+          转换结果将显示在此处…
+        </div>
+
+        <!-- 各进制详细结果 -->
+        <div id="allBases" style="margin-top:20px;display:none;">
+          <h4 style="font-size:15px;margin-bottom:12px;color:var(--color-text-secondary);">各进制表示</h4>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+            <div class="base-result" data-base="2"><span class="base-label">二进制</span><code id="res2"></code></div>
+            <div class="base-result" data-base="8"><span class="base-label">八进制</span><code id="res8"></code></div>
+            <div class="base-result" data-base="10"><span class="base-label">十进制</span><code id="res10"></code></div>
+            <div class="base-result" data-base="16"><span class="base-label">十六进制</span><code id="res16"></code></div>
+            <div class="base-result" data-base="32"><span class="base-label">三十二进制</span><code id="res32"></code></div>
+            <div class="base-result" data-base="64"><span class="base-label">六十四进制</span><code id="res64"></code></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="../js/utils.js"></script>
+  <script src="../js/tools/base-convert.js"></script>
+  <script src="../js/app.js"></script>
+</body>
+</html>

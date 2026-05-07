@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown 预览 - DevToolbox</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- 顶部导航 -->
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand" style="text-decoration:none;">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="8" fill="#0071e3"/>
+        <path d="M8 16L14 22L24 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>DevToolbox</span>
+    </a>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="切换主题"></button>
+  </nav>
+
+  <div class="tool-page">
+    <div class="tool-header fade-in">
+      <div style="font-size:48px;margin-bottom:16px;">📝</div>
+      <h1>Markdown 预览</h1>
+      <p>实时编辑 Markdown 并预览效果，支持导出 HTML。</p>
+    </div>
+
+    <div class="tool-content">
+
+      <!-- 编辑/预览 分栏 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+
+        <!-- 编辑区 -->
+        <div class="io-card fade-in">
+          <div class="io-card-header">
+            <h4>Markdown 编辑</h4>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost" onclick="loadMarkdownSample()" style="font-size:13px;padding:4px 10px;">示例</button>
+              <button class="btn btn-ghost" data-action="clear" data-input="mdInput">清空</button>
+            </div>
+          </div>
+          <textarea id="mdInput" class="io-textarea" style="min-height:400px;"
+            placeholder="在此输入 Markdown 内容…"></textarea>
+        </div>
+
+        <!-- 预览区 -->
+        <div class="io-card fade-in">
+          <div class="io-card-header">
+            <h4>预览</h4>
+            <button class="btn btn-ghost" onclick="exportHTML()" style="font-size:13px;padding:4px 10px;">导出 HTML</button>
+          </div>
+          <div id="mdPreview" class="io-result"
+            style="min-height:400px;max-height:600px;line-height:1.8;padding:20px;">
+            预览将在此处显示…
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 快速参考 -->
+      <div class="io-card fade-in" style="margin-top:24px;">
+        <div class="io-card-header"><h4>Markdown 快速参考</h4></div>
+        <pre style="font-size:13px;line-height:1.8;color:var(--color-text-secondary);white-space:pre-wrap;background:none;padding:0;">
+ # 标题
+ ## 二级标题
+ **粗体**  *斜体*  `行内代码`
+ > 引用文字
+ - 列表项 1
+ - 列表项 2
+ [链接文字](https://example.com)
+ ![图片描述](image.png)
+ ` | 列1 | 列2 |
+ |------|------|
+ | 内容 | 内容 |`
+        </pre>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- marked.js CDN -->
+  <script>
+    let markedLoaded = false;
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js';
+    script.onload = () => { markedLoaded = true; renderMarkdown(); };
+    script.onerror = () => {
+      // fallback CDN
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdn.bootcdn.net/ajax/libs/marked/4.3.0/marked.min.js';
+      s2.onload = () => { markedLoaded = true; renderMarkdown(); };
+      s2.onerror = () => { console.warn('marked.js 加载失败，使用内置渲染'); };
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(script);
+  </script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/tools/markdown-preview.js"></script>
+  <script src="../js/app.js"></script>
+</body>
+</html>

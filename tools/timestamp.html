@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>时间戳转换 - DevToolbox</title>
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <!-- 顶部导航 -->
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand" style="text-decoration:none;">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="8" fill="#0071e3"/>
+        <path d="M8 16L14 22L24 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>DevToolbox</span>
+    </a>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="切换主题"></button>
+  </nav>
+
+  <div class="tool-page">
+    <div class="tool-header fade-in">
+      <div style="font-size:48px;margin-bottom:16px;">🕐</div>
+      <h1>时间戳转换</h1>
+      <p>Unix 时间戳与日期时间互转，支持多时区和毫秒级精度。</p>
+    </div>
+
+    <div class="tool-content">
+
+      <!-- 当前时间戳 -->
+      <div class="io-card fade-in" style="text-align:center;">
+        <div class="io-card-header" style="justify-content:center;">
+          <h4>当前时间戳</h4>
+        </div>
+        <div id="currentTs" style="font-size:32px;font-weight:600;color:var(--color-primary);font-family:monospace;"></div>
+        <div id="currentDate" style="font-size:14px;color:var(--color-text-secondary);margin-top:8px;"></div>
+      </div>
+
+      <!-- 时间戳 → 日期时间 -->
+      <div class="io-card fade-in">
+        <div class="io-card-header">
+          <h4>时间戳 → 日期时间</h4>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+          <input type="text" id="tsInput" class="search-box" style="width:280px;margin:0;" placeholder="输入时间戳，例如：1700000000">
+          <select id="tsUnit" style="padding:10px 12px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-bg-tertiary);color:var(--color-text-primary);font-size:14px;">
+            <option value="s">秒（s）</option>
+            <option value="ms">毫秒（ms）</option>
+          </select>
+          <button class="btn btn-primary" data-action="execute" onclick="tsToDate()">转换</button>
+        </div>
+        <div id="tsResult" class="io-result" style="min-height:60px;">转换结果将显示在此处…</div>
+      </div>
+
+      <!-- 日期时间 → 时间戳 -->
+      <div class="io-card fade-in">
+        <div class="io-card-header">
+          <h4>日期时间 → 时间戳</h4>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+          <input type="datetime-local" id="dateInput" style="padding:10px 12px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-bg-tertiary);color:var(--color-text-primary);font-size:14px;">
+          <select id="dateUnit" style="padding:10px 12px;border:1px solid var(--color-border);border-radius:var(--radius-sm);background:var(--color-bg-tertiary);color:var(--color-text-primary);font-size:14px;">
+            <option value="s">秒（s）</option>
+            <option value="ms">毫秒（ms）</option>
+          </select>
+          <button class="btn btn-primary" data-action="execute" onclick="dateToTs()">转换</button>
+        </div>
+        <div id="dateResult" class="io-result" style="min-height:60px;">转换结果将显示在此处…</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="../js/utils.js"></script>
+  <script src="../js/tools/timestamp.js"></script>
+  <script src="../js/app.js"></script>
+</body>
+</html>
