@@ -312,6 +312,15 @@ function updateThemeIcon() {
     : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
 }
 
+/**
+ * 切换中英文
+ */
+function toggleLanguage() {
+  var newLang = i18n.currentLang === 'zh' ? 'en' : 'zh';
+  i18n.setLanguage(newLang);
+  showToast(newLang === 'zh' ? '已切换为中文' : 'Switched to English', 'success');
+}
+
 /* ====== 初始化 ====== */
 
 // DOM 加载完成后自动初始化
