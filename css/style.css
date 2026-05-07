@@ -640,14 +640,339 @@ p {
   h2 { font-size: 32px; }
   .text-hero { font-size: 48px; }
   .hero { padding: var(--space-3xl) var(--space-md); }
+  .hero-compact { min-height: 50vh; padding-top: 80px; padding-bottom: var(--space-3xl); }
+  .hero-compact h1 { font-size: 36px; }
   .section { padding: var(--space-2xl) var(--space-md); }
   .tools-grid { grid-template-columns: 1fr; }
   .navbar { padding: 0 var(--space-md); }
   .tool-content { padding: var(--space-xl) var(--space-md); }
+  .features-grid { grid-template-columns: 1fr; }
+  .feature-card { padding: var(--space-lg); }
 }
 
 @media (max-width: 480px) {
   h1 { font-size: 32px; }
   .text-hero { font-size: 36px; }
   .text-subtitle { font-size: 18px; }
+}
+
+/* ============================================
+   🚀 UX 优化增强
+   ============================================ */
+
+/* --- 主题切换平滑过渡 --- */
+html {
+  transition: background-color var(--duration-slow) var(--ease-out);
+}
+
+html *,
+html *::before,
+html *::after {
+  transition: background-color var(--duration-slow) var(--ease-out),
+              border-color var(--duration-slow) var(--ease-out),
+              color var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
+}
+
+/* --- Hero 动态渐变背景动画 --- */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(ellipse at 20% 50%, rgba(0,113,227,0.03) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(52,199,89,0.02) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 80%, rgba(175,82,222,0.02) 0%, transparent 50%);
+  animation: heroGlow 15s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes heroGlow {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  50%  { transform: translate(2%, -2%) rotate(2deg); }
+  100% { transform: translate(-2%, 2%) rotate(-2deg); }
+}
+
+.hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- 滚动进度条 --- */
+.scroll-progress {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-primary), #af52de);
+  z-index: 999;
+  transition: width 100ms linear;
+  pointer-events: none;
+}
+
+/* --- 回到顶部按钮 --- */
+.back-to-top {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all var(--duration-normal) var(--ease-out);
+  z-index: 998;
+  color: var(--color-text-primary);
+}
+
+.back-to-top.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.back-to-top:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* --- 工具卡片进场交错动画 --- */
+.tool-card.fade-in:nth-child(1) { transition-delay: 0.00s; }
+.tool-card.fade-in:nth-child(2) { transition-delay: 0.05s; }
+.tool-card.fade-in:nth-child(3) { transition-delay: 0.10s; }
+.tool-card.fade-in:nth-child(4) { transition-delay: 0.15s; }
+.tool-card.fade-in:nth-child(5) { transition-delay: 0.20s; }
+.tool-card.fade-in:nth-child(6) { transition-delay: 0.25s; }
+.tool-card.fade-in:nth-child(7) { transition-delay: 0.30s; }
+.tool-card.fade-in:nth-child(8) { transition-delay: 0.00s; }
+.tool-card.fade-in:nth-child(9) { transition-delay: 0.05s; }
+.tool-card.fade-in:nth-child(10) { transition-delay: 0.10s; }
+.tool-card.fade-in:nth-child(11) { transition-delay: 0.15s; }
+.tool-card.fade-in:nth-child(12) { transition-delay: 0.20s; }
+.tool-card.fade-in:nth-child(13) { transition-delay: 0.25s; }
+.tool-card.fade-in:nth-child(14) { transition-delay: 0.30s; }
+
+/* --- 搜索框增强 --- */
+.search-container {
+  position: relative;
+}
+
+.search-shortcut {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.search-shortcut kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border-light);
+  border-radius: 4px;
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+}
+
+.search-results-count {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  text-align: center;
+  margin-top: var(--space-sm);
+  min-height: 20px;
+}
+
+/* --- 按钮涟漪效果 --- */
+.btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(255,255,255,0.3) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.btn:active::after {
+  opacity: 1;
+  transition: opacity 0s;
+}
+
+/* --- Toast 增强 --- */
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 90vw;
+  white-space: normal;
+  word-break: break-word;
+  backdrop-filter: blur(8px);
+}
+
+/* --- 导航栏滚动隐藏/显示 --- */
+.navbar {
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.navbar.nav-hidden {
+  transform: translateY(-100%);
+}
+
+/* --- 上传区域样式增强（用于文件格式转换） --- */
+.upload-area {
+  border: 2px dashed var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-out);
+  background: var(--color-bg-tertiary);
+}
+
+.upload-area:hover {
+  border-color: var(--color-primary);
+  background: var(--color-card-bg);
+}
+
+/* --- 加载动画圆环（用于转换中） --- */
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- Language Toggle --- */
+.lang-toggle {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  font-family: var(--font-family);
+  line-height: 1;
+}
+.lang-toggle:hover {
+  background: var(--color-border-light);
+}
+.footer .lang-toggle {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.footer .lang-toggle:hover {
+  background: var(--color-bg-tertiary);
+}
+
+/* --- Compact Hero --- */
+.hero-compact {
+  min-height: 50vh;
+  padding-top: 100px;
+  padding-bottom: var(--space-3xl);
+}
+.hero-compact h1 {
+  font-size: 48px;
+}
+.hero-compact .text-subtitle {
+  font-size: 18px;
+}
+
+/* --- Feature Cards --- */
+.features-section {
+  padding: 0 var(--space-xl) var(--space-3xl);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-xl);
+}
+.feature-card {
+  background: var(--color-card-bg);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl) var(--space-lg);
+  border: 1px solid var(--color-border-light);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+.feature-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+.feature-icon {
+  font-size: 32px;
+  margin-bottom: var(--space-md);
+}
+.feature-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: var(--space-sm);
+  color: var(--color-text-primary);
+}
+.feature-card p {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* --- 响应式增强 --- */
+@media (max-width: 768px) {
+  .back-to-top {
+    bottom: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+  }
+  .search-shortcut { display: none; }
+  .hero-compact { min-height: 50vh; padding-top: 80px; padding-bottom: var(--space-3xl); }
+  .hero-compact h1 { font-size: 36px; }
+  .features-grid { grid-template-columns: 1fr; }
+  .feature-card { padding: var(--space-lg); }
+}
+
+/* --- 打印样式 --- */
+@media print {
+  .navbar, .back-to-top, .scroll-progress, .toast, .footer { display: none; }
+  .hero { min-height: auto; padding: 48px 24px; }
 }
